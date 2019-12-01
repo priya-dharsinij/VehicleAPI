@@ -37,7 +37,14 @@ public class CarService {
      * @return a list of all vehicles in the CarRepository
      */
     public List<Car> list() {
-        return repository.findAll();
+
+        List<Car> cars = repository.findAll();
+
+        cars.stream().forEach((car -> {
+            setPriceAndLocation(car);
+        }));
+
+        return cars;
     }
 
     /**
@@ -54,30 +61,7 @@ public class CarService {
         Optional<Car> optionalCar = repository.findById(id);
         Car car = optionalCar.orElseThrow(CarNotFoundException::new );
 
-        /**
-         * TODO: Use the Pricing Web client you create in `VehiclesApiApplication`
-         *   to get the price based on the `id` input'
-         * TODO: Set the price of the car
-         * Note: The car class file uses @transient, meaning you will need to call
-         *   the pricing service each time to get the price.
-         */
-
-        String price = priceClient.getPrice(id);
-        car.setPrice(price);
-
-
-        /**
-         * TODO: Use the Maps Web client you create in `VehiclesApiApplication`
-         *   to get the address for the vehicle. You should access the location
-         *   from the car object and feed it to the Maps service.
-         * TODO: Set the location of the vehicle, including the address information
-         * Note: The Location class file also uses @transient for the address,
-         * meaning the Maps service needs to be called each time for the address.
-         */
-
-        Location location = mapClient.getAddress(car.getLocation());
-        car.setLocation(location);
-        return car;
+        return setPriceAndLocation(car);
     }
 
     /**
@@ -87,15 +71,18 @@ public class CarService {
      */
     public Car save(Car car) {
         if (car.getId() != null) {
+
             return repository.findById(car.getId())
                     .map(carToBeUpdated -> {
+                        carToBeUpdated.setCondition(car.getCondition());
                         carToBeUpdated.setDetails(car.getDetails());
                         carToBeUpdated.setLocation(car.getLocation());
-                        return repository.save(carToBeUpdated);
+                        return setPriceAndLocation(repository.save(carToBeUpdated));
                     }).orElseThrow(CarNotFoundException::new);
         }
 
-        return repository.save(car);
+        Car newCar = repository.save(car);
+        return setPriceAndLocation(newCar);
     }
 
     /**
@@ -112,13 +99,15 @@ public class CarService {
         Car car = optionalCar.orElseThrow(CarNotFoundException::new );
 
         repository.deleteById(id);
+    }
 
+    private Car setPriceAndLocation(Car car){
+        Location location = mapClient.getAddress(car.getLocation());
+        car.setLocation(location);
 
+        String price = priceClient.getPrice(car.getId());
+        car.setPrice(price);
 
-        /**
-         * TODO: Delete the car from the repository.
-         */
-
-
+        return car;
     }
 }

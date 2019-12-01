@@ -15,6 +15,7 @@ public class PriceClient {
 
     private final WebClient client;
 
+
     public PriceClient(WebClient pricing) {
         this.client = pricing;
     }
